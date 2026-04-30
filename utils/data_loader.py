@@ -49,6 +49,8 @@ def _find_csv(data_dir: str) -> Optional[str]:
         "training_dataset_1.csv",
         "test_dataset.csv",
         "batadal_dataset.csv",
+        "BATADAL_dataset04.csv",
+        "BATADAL_dataset03.csv",
     ]:
         p = os.path.join(data_dir, name)
         if os.path.exists(p):

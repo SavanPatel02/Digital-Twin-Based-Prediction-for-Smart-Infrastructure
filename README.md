@@ -142,7 +142,8 @@ Open `http://localhost:8501` in your browser.
 ```
 digital_twin_project/
 ├── data/
-│   └── training_dataset_2.csv     ← BATADAL (download separately)
+│   ├── training_dataset_1.csv     ← BATADAL Dataset 1 (1 year, labeled normal ops)
+│   └── training_dataset_2.csv     ← BATADAL Dataset 2 (6 months, attack periods)
 ├── models/
 │   ├── train_isolation_forest.py
 │   ├── train_lstm.py
