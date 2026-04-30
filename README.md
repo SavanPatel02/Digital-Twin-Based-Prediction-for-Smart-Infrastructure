@@ -26,9 +26,14 @@ remaining useful life (RUL).
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  Layer 1 — DATA INGESTION                               │
-│  utils/data_loader.py                                   │
-│  • Load BATADAL CSV  →  parse timestamps  →  clean      │
+│  utils/data_loader.py      (Historical — BATADAL CSV)   │
+│  • Load CSV  →  parse timestamps  →  clean              │
 │  • stream_batadal() generator: one row per tick         │
+│                                                         │
+│  utils/live_data_fetcher.py  (Live — USGS NWIS API)     │
+│  • Poll 8 US water stations every 15 min (no key)       │
+│  • 40 real sensor streams (flow, level, temp, etc.)     │
+│  • 7-day baseline for auto-threshold calibration        │
 └───────────────────────┬─────────────────────────────────┘
                         │ {sensor_id: value, timestamp}
 ┌───────────────────────▼─────────────────────────────────┐
@@ -61,7 +66,13 @@ remaining useful life (RUL).
 
 ---
 
-## Dataset — BATADAL
+## Data Sources
+
+The system supports two data modes selectable from the dashboard sidebar.
+
+---
+
+### Mode 1 — Historical: BATADAL Dataset
 
 | Property | Value |
 |---|---|
@@ -72,11 +83,52 @@ remaining useful life (RUL).
 | Labels | `ATT_FLAG` — 1 during injected attack periods |
 | Source | https://www.batadal.net/data.html |
 
-Download `training_dataset_1.csv`, `training_dataset_2.csv` (and optionally
-`test_dataset.csv`) and place them in `data/`.
+Both labeled datasets are included in `data/`:
+
+| File | Description |
+|---|---|
+| `training_dataset_1.csv` | 1 year of normal operations (labeled) |
+| `training_dataset_2.csv` | 6 months with injected attack periods |
 
 > **No dataset?** The system auto-generates synthetic BATADAL-like data so
 > you can run the demo immediately without downloading anything.
+
+---
+
+### Mode 2 — Live: USGS National Water Information System (NWIS)
+
+Real-time water sensor readings streamed directly from the **USGS Instantaneous Values API**.  
+No API key required. Data updates every **15 minutes**.
+
+**API:** https://waterservices.usgs.gov/rest/IV-Service.html
+
+#### Monitoring Stations (8 geographically distributed across the US)
+
+| Station Name | USGS ID | Location |
+|---|---|---|
+| Potomac River at Little Falls | 01646500 | Maryland |
+| Neuse River at Kinston | 02087500 | North Carolina |
+| Mississippi River at Baton Rouge | 07374000 | Louisiana |
+| Colorado River at Lees Ferry | 09380000 | Arizona |
+| Sacramento River at Sacramento | 11447650 | California |
+| Tug Fork at Williamson | 03213700 | West Virginia |
+| Mississippi River at Clinton | 05420500 | Iowa |
+| South Platte River at Denver | 06710000 | Colorado |
+
+#### Parameters Fetched per Station (5 sensors)
+
+| USGS Code | Parameter | Unit |
+|---|---|---|
+| 00060 | Discharge / Flow rate | ft³/s |
+| 00065 | Gage height / Water level | ft |
+| 00010 | Water temperature | °C |
+| 00095 | Specific conductance | µS/cm |
+| 00300 | Dissolved oxygen | mg/L |
+
+Total: **40 live sensor streams** (8 stations × 5 parameters).
+
+Between 15-minute API refreshes, the dashboard animates readings with ±0.5% realistic noise so charts remain live.  
+Thresholds are auto-calibrated from a **7-day historical baseline** fetched at startup.
 
 ---
 
@@ -151,9 +203,10 @@ digital_twin_project/
 ├── twin/
 │   └── digital_twin.py            ← DigitalTwin class
 ├── dashboard/
-│   └── app.py                     ← Streamlit app
+│   └── app.py                     ← Streamlit app (Historical + Live modes)
 ├── utils/
-│   └── data_loader.py             ← streaming simulator
+│   ├── data_loader.py             ← BATADAL streaming simulator
+│   └── live_data_fetcher.py       ← USGS live API fetcher (40 sensors, 8 stations)
 ├── train_all.py                   ← one-command training
 ├── requirements.txt
 └── README.md
